@@ -120,7 +120,10 @@
 
     function updateStyle() {
         const size = document.getElementById('fontSize').value;
-        document.querySelectorAll('.sentence-box').forEach(b => b.style.fontSize = size + "px');
+        const boxes = document.querySelectorAll('.sentence-box');
+        boxes.forEach(b => {
+            b.style.fontSize = size + "px";
+        });
     }
 </script>
 </body>
