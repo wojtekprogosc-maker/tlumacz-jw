@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>JW Translator Pro NL-PL</title>
+    <style>
+        :root { --jw-purple: #4a235a; --bg: #ffffff; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: var(--jw-purple); color: white; padding: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #controls { background: #f0f0f5; padding: 15px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; border-bottom: 2px solid #ddd; }
+        #output { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column-reverse; }
+        .sentence-box { margin-bottom: 20px; padding: 15px; border-radius: 12px; background: #fff; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.3s; }
+        .pl-text { color: #000; font-weight: bold; display: block; line-height: 1.3; }
+        .nl-text { color: #777; font-size: 0.6em; display: block; margin-top: 8px; border-top: 1px solid #f0f0f0; padding-top: 5px; }
+        button { padding: 12px 25px; font-size: 1.1rem; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; color: white; }
+        #start-btn { background: #27ae60; }
+        #stop-btn { background: #e74c3c; }
+        input[type=range] { width: 200px; }
+        .status-indicator { font-size: 0.8rem; margin-top: 5px; color: #dfd; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>JW TRANSLATOR (Niderlandzki ➔ Polski)</div>
+    <div id="status" class="status-indicator">Gotowy do pracy</div>
+</header>
+
+<div id="controls">
+    <button id="start-btn" onclick="startTranslation()">▶ URUCHOM</button>
+    <button id="stop-btn" onclick="stopTranslation()" style="display:none;">■ ZATRZYMAJ</button>
+    <div style="text-align:center">
+        <label style="display:block; font-size: 0.8rem; font-weight: bold;">WIELKOŚĆ TEKSTU</label>
+        <input type="range" id="fontSize" min="20" max="100" value="40" oninput="updateStyle()">
+    </div>
+</div>
+
+<div id="output"></div>
+
+<script>
+    const jwDictionary = {
+        "Jesaja": "Izajasza",
+        "Jehovah": "Jehowa",
+        "rijksvoorlichtingsdienst": "Serwisie Informacyjnym Królestwa",
+        "Koninkrijk": "Królestwo",
+        "broeders": "bracia",
+        "zusters": "siostry",
+        "gemeente": "zbór"
+    };
+
+    let recognition;
+    let isActive = false;
+
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = 'nl-NL';
+
+        recognition.onstart = () => {
+            document.getElementById('status').innerText = "🔴 SŁUCHAM WYKŁADOWCY...";
+            document.getElementById('status').style.color = "#ffeb3b";
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript;
+            translateText(transcript);
+        };
+
+        recognition.onend = () => { if (isActive) recognition.start(); };
+    }
+
+    async function translateText(text) {
+        try {
+            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=nl|pl`);
+            const data = await response.json();
+            let translated = data.responseData.translatedText;
+
+            // Korekta teokratyczna
+            Object.keys(jwDictionary).forEach(key => {
+                const regex = new RegExp(key, "gi");
+                // Specjalna poprawka dla Izajasza i innych ksiąg (deklinacja)
+                if (translated.includes("Izajasz") || translated.includes("Izajasza")) {
+                     translated = translated.replace(/Izajasz\s(\d+)/g, "Izajasza $1");
+                }
+                if (text.toLowerCase().includes("rijksvoorlichtingsdienst")) {
+                    translated = translated.replace(/usługa informacji państwowej|rządowa służba/gi, "Serwisie Informacyjnym Królestwa");
+                }
+            });
+
+            renderMessage(text, translated);
+        } catch (e) { console.error("Błąd tłumaczenia"); }
+    }
+
+    function renderMessage(nl, pl) {
+        const output = document.getElementById('output');
+        const size = document.getElementById('fontSize').value;
+        const div = document.createElement('div');
+        div.className = 'sentence-box';
+        div.style.fontSize = size + "px";
+        div.innerHTML = `<span class="pl-text">${pl}</span><span class="nl-text">${nl}</span>`;
+        output.appendChild(div);
+        output.scrollTop = output.scrollHeight;
+    }
+
+    function startTranslation() {
+        isActive = true;
+        recognition.start();
+        document.getElementById('start-btn').style.display = 'none';
+        document.getElementById('stop-btn').style.display = 'inline-block';
+    }
+
+    function stopTranslation() {
+        isActive = false;
+        recognition.stop();
+        document.getElementById('start-btn').style.display = 'inline-block';
+        document.getElementById('stop-btn').style.display = 'none';
+        document.getElementById('status').innerText = "Zatrzymano.";
+    }
+
+    function updateStyle() {
+        const size = document.getElementById('fontSize').value;
+        document.querySelectorAll('.sentence-box').forEach(b => b.style.fontSize = size + "px');
+    }
+</script>
+</body>
+</html>
