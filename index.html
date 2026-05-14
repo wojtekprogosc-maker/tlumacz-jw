@@ -2,137 +2,128 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>TŁUMACZ ZEBRAŃ - Wersja Uproszczona</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JW Translator Mobile</title>
     <style>
-        /* Styl dostosowany dla osób 60+ */
-        body { font-family: 'Arial', sans-serif; background-color: #ffffff; color: #000000; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background-color: #4a235a; color: white; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; border-bottom: 5px solid #32193d; }
+        :root { --jw-purple: #4a235a; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        #controls { background-color: #f1f1f1; padding: 25px; display: flex; flex-direction: column; align-items: center; gap: 20px; border-bottom: 2px solid #ccc; }
-        
-        .big-button { padding: 25px 50px; font-size: 30px; font-weight: bold; border-radius: 20px; border: none; cursor: pointer; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        #start-btn { background-color: #27ae60; color: white; }
-        #stop-btn { background-color: #e74c3c; color: white; display: none; }
-        
-        #slider-container { width: 90%; max-width: 500px; text-align: center; }
-        label { font-size: 22px; font-weight: bold; display: block; margin-bottom: 10px; }
-        input[type=range] { width: 100%; height: 40px; cursor: pointer; }
+        /* Nagłówek i Status */
+        header { background: var(--jw-purple); color: white; padding: 12px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .status-bar { font-size: 12px; background: #32193d; color: #ccc; padding: 4px; text-transform: uppercase; letter-spacing: 1px; }
 
-        #output { flex-grow: 1; padding: 20px; overflow-y: auto; background-color: #ffffff; }
-        .entry { margin-bottom: 30px; padding: 20px; border-left: 10px solid #4a235a; background-color: #fafafa; border-radius: 0 15px 15px 0; }
-        .pl-text { display: block; line-height: 1.4; color: #000000; margin-bottom: 10px; }
-        .nl-text { display: block; font-size: 0.6em; color: #666; font-style: italic; border-top: 1px solid #ddd; padding-top: 5px; }
+        /* Panel Sterowania - Dopasowany pod kciuk */
+        #controls { background: #f8f8f8; padding: 15px; border-bottom: 1px solid #ddd; display: flex; flex-direction: column; gap: 15px; align-items: center; }
+        .btn-group { display: flex; gap: 10px; width: 100%; justify-content: center; }
+        
+        button { flex: 1; max-width: 150px; padding: 15px; font-size: 16px; border: none; border-radius: 12px; font-weight: bold; color: white; -webkit-tap-highlight-color: transparent; }
+        #start-btn { background: #27ae60; box-shadow: 0 4px #1e8449; }
+        #start-btn:active { transform: translateY(2px); box-shadow: 0 2px #1e8449; }
+        #stop-btn { background: #e74c3c; display: none; }
 
-        .status-msg { font-size: 20px; font-weight: bold; color: #4a235a; }
+        .slider-box { width: 100%; display: flex; align-items: center; gap: 10px; color: var(--jw-purple); font-weight: bold; }
+        input[type=range] { flex-grow: 1; height: 10px; accent-color: var(--jw-purple); }
+
+        /* Obszar Tekstu - Nowe na górze */
+        #output { flex-grow: 1; overflow-y: scroll; padding: 15px; display: flex; flex-direction: column; }
+        .box { margin-bottom: 15px; padding: 15px; background: #fff; border-left: 5px solid var(--jw-purple); border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); animation: slideIn 0.3s ease-out; }
+        .pl { display: block; color: #000; font-weight: 600; line-height: 1.3; }
+        .nl { display: block; font-size: 0.55em; color: #888; font-style: italic; margin-top: 8px; border-top: 1px dotted #ccc; padding-top: 4px; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<header>TŁUMACZ DLA ZBORU</header>
+<header>
+    <div style="font-size: 18px; font-weight: bold;">JW TRANSLATOR NL-PL</div>
+    <div id="status" class="status-bar">Mikrofon wyłączony</div>
+</header>
 
 <div id="controls">
-    <div id="status-text" class="status-msg">Kliknij zielony przycisk, aby zacząć</div>
-    
-    <button id="start-btn" class="big-button" onclick="startApp()">▶ URUCHOM</button>
-    <button id="stop-btn" class="big-button" onclick="stopApp()">■ ZATRZYMAJ</button>
-
-    <div id="slider-container">
-        <label>WIELKOŚĆ LITER:</label>
-        <input type="range" id="fontSize" min="30" max="120" value="50" oninput="changeSize()">
+    <div class="btn-group">
+        <button id="start-btn" onclick="startApp()">▶ START</button>
+        <button id="stop-btn" onclick="stopApp()">■ STOP</button>
+    </div>
+    <div class="slider-box">
+        <span>A</span>
+        <input type="range" id="fontSize" min="20" max="90" value="40" oninput="resize()">
+        <span style="font-size: 24px;">A</span>
     </div>
 </div>
 
-<div id="output" id="chat"></div>
+<div id="output"></div>
 
 <script>
-    // BAZA DANYCH: Księgi Biblijne i Punkty Programu
-    const jwBibleMap = {
-        "Genesis": "Rodzaju", "Exodus": "Wyjścia", "Leviticus": "Kapłańska", "Numeri": "Liczb", "Deuteronomium": "Powtórzonego Prawa",
-        "Jozua": "Jozuego", "Rechters": "Sędziów", "Ruth": "Rut", "Samuel": "Samuela", "Koningen": "Królów", "Kronieken": "Kronik",
-        "Ezra": "Ezdrasza", "Nehemia": "Nehemiasza", "Esther": "Estery", "Job": "Hioba", "Psalmen": "Psalmów", "Spreuken": "Przysłów",
-        "Prediker": "Kaznodziei", "Hooglied": "Pieśń nad Pieśniami", "Jesaja": "Izajasza", "Jeremia": "Jeremiasza", "Klaagliederen": "Lamentacji",
-        "Ezechiël": "Ezechiela", "Daniël": "Daniela", "Hosea": "Ozeasza", "Joël": "Joela", "Amos": "Amosa", "Obadja": "Abdiasza",
-        "Jona": "Jonasza", "Micha": "Micheasza", "Nahum": "Nahuma", "Habakuk": "Habakuka", "Zefanja": "Sofoniasza", "Haggaï": "Aggeusza",
-        "Zacharia": "Zachariasza", "Maleachi": "Malachiasza", "Mattheüs": "Mateusza", "Markus": "Marka", "Lukas": "Łukasza",
-        "Johannes": "Jana", "Handelingen": "Dziejów Apostolskich", "Romeinen": "Rzymian", "Korinthiërs": "Koryntian", "Galaten": "Galatów",
-        "Efeziërs": "Efezjan", "Filippenzen": "Filipian", "Kolossenzen": "Kolosan", "Thessalonicenzen": "Tesaloniczan", "Timotheüs": "Tymoteusza",
-        "Titus": "Tytusa", "Filemon": "Filemona", "Hebreeën": "Hebrajczyków", "Jakobus": "Jakuba", "Petrus": "Piotra", "Judas": "Judy",
-        "Openbaring": "Objawienia",
-        // Punkty programu
-        "Schatten uit Gods Woord": "Skarby ze Słowa Bożego",
-        "Ga op in de velddienst": "Ulepszajmy swoją służbę",
-        "Leven als christenen": "Chrześcijańskie życie",
-        "Gemeentebijbelstudie": "Zborowe studium Biblii"
+    const jwBooks = {
+        "Genesis":"Rodzaju","Exodus":"Wyjścia","Leviticus":"Kapłańska","Numeri":"Liczb","Deuteronomium":"Powtórzonego Prawa","Jozua":"Jozuego","Rechters":"Sędziów","Ruth":"Rut","Samuel":"Samuela","Koningen":"Królów","Kronieken":"Kronik","Ezra":"Ezdrasza","Nehemia":"Nehemiasza","Esther":"Estery","Job":"Hioba","Psalmen":"Psalmów","Spreuken":"Przysłów","Prediker":"Kaznodziei","Hooglied":"Pieśń nad Pieśniami","Jesaja":"Izajasza","Jeremia":"Jeremiasza","Klaagliederen":"Lamentacji","Ezechiël":"Ezechiela","Daniël":"Daniela","Hosea":"Ozeasza","Joël":"Joela","Amos":"Amosa","Obadja":"Abdiasza","Jona":"Jonasza","Micha":"Micheasza","Nahum":"Nahuma","Habakuk":"Habakuka","Zefanja":"Sofoniasza","Haggaï":"Aggeusza","Zacharia":"Zachariasza","Maleachi":"Malachiasza","Mattheüs":"Mateusza","Markus":"Marka","Lukas":"Łukasza","Johannes":"Jana","Handelingen":"Dziejów","Romeinen":"Rzymian","Korinthiërs":"Koryntian","Galaten":"Galatów","Efeziërs":"Efezjan","Filippenzen":"Filipian","Kolossenzen":"Kolosan","Thessalonicenzen":"Tesaloniczan","Timotheüs":"Tymoteusza","Titus":"Tytusa","Filemon":"Filemona","Hebreeën":"Hebrajczyków","Jakobus":"Jakuba","Petrus":"Piotra","Judas":"Judy","Openbaring":"Objawienia"
     };
 
     let rec;
-    let active = false;
+    let isRunning = false;
 
     if ('webkitSpeechRecognition' in window) {
         rec = new webkitSpeechRecognition();
         rec.continuous = true;
-        rec.interimResults = false;
+        rec.interimResults = false; 
         rec.lang = 'nl-NL';
 
         rec.onstart = () => {
-            document.getElementById('status-text').innerText = "SŁUCHAM... (Proszę mówić)";
+            document.getElementById('status').innerText = "🔴 SŁUCHAM...";
+            document.getElementById('status').style.color = "#ff4d4d";
             document.getElementById('start-btn').style.display = 'none';
-            document.getElementById('stop-btn').style.display = 'block';
+            document.getElementById('stop-btn').style.display = 'inline-block';
         };
 
         rec.onresult = async (event) => {
-            const rawText = event.results[event.results.length - 1][0].transcript;
-            
-            // Ignoruj dźwięki tła (śmiech, brawa, hałas) - jeśli zdanie jest za krótkie
-            if (rawText.trim().split(" ").length < 2) return;
+            const result = event.results[event.results.length - 1];
+            const speech = result[0].transcript;
 
-            // Tłumaczenie
+            // Filtrowanie braw/krótkich hałasów
+            if (speech.trim().split(/\s+/).length < 2) return;
+
             try {
-                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(rawText)}&langpair=nl|pl`);
-                const data = await response.json();
+                // Szybsze zapytanie MyMemory
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(speech)}&langpair=nl|pl`);
+                const data = await res.json();
                 let translated = data.responseData.translatedText;
 
-                // Poprawki teokratyczne (Księgi i punkty)
-                Object.keys(jwBibleMap).forEach(nlKey => {
-                    const regex = new RegExp(nlKey, "gi");
-                    translated = translated.replace(regex, jwBibleMap[nlKey]);
-                });
+                // Zamiana ksiąg biblijnych
+                for (let [nl, pl] of Object.entries(jwBooks)) {
+                    const regex = new RegExp(nl, "gi");
+                    translated = translated.replace(regex, pl);
+                }
 
-                displayResult(rawText, translated);
-            } catch (e) { console.log("Błąd sieci"); }
+                addText(speech, translated);
+            } catch (e) { console.error("Tłumacz zajęty..."); }
         };
 
-        rec.onend = () => { if (active) rec.start(); };
+        rec.onend = () => { if (isRunning) rec.start(); };
     }
 
-    function displayResult(nl, pl) {
+    function addText(nl, pl) {
         const out = document.getElementById('output');
         const size = document.getElementById('fontSize').value;
         const div = document.createElement('div');
-        div.className = 'entry';
+        div.className = 'box';
         div.style.fontSize = size + "px";
-        div.innerHTML = `<span class="pl-text">${pl}</span><span class="nl-text">${nl}</span>`;
-        out.prepend(div); // Nowe na górze - wygodniejsze dla seniorów
+        div.innerHTML = `<span class="pl">${pl}</span><span class="nl">${nl}</span>`;
+        out.insertBefore(div, out.firstChild); // Nowe na samej górze
     }
 
-    function startApp() {
-        active = true;
-        rec.start();
-    }
-
-    function stopApp() {
-        active = false;
-        rec.stop();
-        document.getElementById('start-btn').style.display = 'block';
+    function startApp() { isRunning = true; rec.start(); }
+    function stopApp() { 
+        isRunning = false; rec.stop(); 
+        document.getElementById('status').innerText = "Zatrzymano";
+        document.getElementById('status').style.color = "#ccc";
+        document.getElementById('start-btn').style.display = 'inline-block';
         document.getElementById('stop-btn').style.display = 'none';
-        document.getElementById('status-text').innerText = "Zatrzymano.";
     }
-
-    function changeSize() {
+    function resize() {
         const size = document.getElementById('fontSize').value;
-        const entries = document.querySelectorAll('.entry');
-        entries.forEach(e => e.style.fontSize = size + "px");
+        document.querySelectorAll('.box').forEach(b => b.style.fontSize = size + "px");
     }
 </script>
+
 </body>
 </html>
